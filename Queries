@@ -1,0 +1,187 @@
+1. List the names of all nerds who are friends with a jock whose name starts with ‘J’.
+
+SELECT nerd.name
+FROM nerd
+WHERE EXISTS (
+	SELECT jock.name
+	FROM jock INNER JOIN friends
+	ON jock.ssn = friends.jssn
+	WHERE jock.name LIKE ‘J%’ AND friends.nssn = nerd.ssn);
+
++--------+
+| name   |
++--------+
+| Rachel |
+| Carol  |
++--------+
+
+2. List the favorite sport of all jocks who are friends with female nerds.
+
+SELECT sport.name, sport.jssn
+FROM sport
+WHERE EXISTS (
+	SELECT nerd.gender
+	FROM nerd INNER JOIN friends INNER JOIN jock
+	ON nerd.ssn = friends.nssn AND friends.jssn = jock.ssn
+	WHERE nerd.gender = ‘F’ AND jock.ssn = sport.jssn);
+
++-------------------+-----------+
+| name              | jssn      |
++-------------------+-----------+
+| Soccer            | 116168223 |
+| American Football | 116254857 |
+| Soccer            | 116318704 |
+| American Football | 116452994 |
++-------------------+-----------+
+
+
+3. List the favorite video games and ssn of nerds who are friends with jocks whose favorite sport is Soccer.
+
+SELECT favorite_video_games, nerd.ssn
+FROM nerd
+WHERE EXISTS (
+	SELECT sport.name
+	FROM sport INNER JOIN jock INNER JOIN friends
+	ON sport.jssn = jock.ssn AND jock.ssn = friends.jssn
+	WHERE sport.name = ‘Soccer’ AND friends.nssn = nerd.ssn);
+
++------------------------------------------+-----------+
+| favorite_video_games                     | ssn       |
++------------------------------------------+-----------+
+| Doom | Resident Evil | Left 4 Dead       | 116357133 |
+| Halo | Call of Duty | Destiny 2          | 116431894 |
+| Overwatch | MarioKart | Yoshi’s Island   | 116783065 |
++------------------------------------------+-----------+
+
+4. List the names of all nerds whose favorite Magic card is red who don’t have Samsung cell phones.
+
+SELECT nerd.name
+FROM nerd INNER JOIN mtg_card
+ON nerd.ssn = mtg_card.nssn
+WHERE mtg_card.color = ‘Red’ AND NOT EXISTS (
+SELECT nerd_cell_phone.phone_type
+FROM nerd_cell_phone
+WHERE nerd_cell_phone.phone_type LIKE ‘%Make: S%’ AND nerd_cell_phone.nssn = nerd.ssn);
+
++-------+
+| name  |
++-------+
+| Carol |
+| Sally |
++-------+
+
+
+5. List the nssn and phone color of nerds whose favorite Magic card is not a creature.
+
+SELECT nerd_cell_phone.color, nerd_cell_phone.nssn
+FROM nerd_cell_phone
+WHERE NOT EXISTS (
+	SELECT card_type
+	FROM mtg_card
+	WHERE card_type = ‘Creature’ AND mtg_card.nssn = nerd_cell_phone.nssn);
+
++--------+-----------+
+| color  | nssn      |
++--------+-----------+
+| Gold   | 116212998 |
+| Pink   | 116283961 |
+| Silver | 116355793 |
+| Silver | 116431894 |
+| Black  | 116783065 |
++--------+-----------+
+
+
+6. List the ssn and phone types of all nerds who are friends with a jock whose cell phone is not silver.
+
+SELECT nerd_cell_phone.phone_type, nerd_cell_phone.nssn
+FROM nerd_cell_phone
+WHERE NOT EXISTS (
+	SELECT jock_cell_phone.color
+	FROM jock_cell_phone INNER JOIN jock INNER JOIN friends
+	ON jock_cell_phone.jssn = jock.ssn AND jock.ssn = friends.jssn
+	WHERE jock_cell_phone.color = ‘Silver’ AND friends.nssn = nerd_cell_phone.nssn);
+
++---------------------------------+-----------+
+| phone_type                      | nssn      |
++---------------------------------+-----------+
+| Make: Apple, Model: iPhone 7    | 116098332 |
+| Make: Samsung, Model: Galaxy S8 | 116212998 |
+| Make: Apple, Model: iPhone 7    | 116357133 |
+| Make: Samsung, Model: Galaxy S8 | 116431894 |
+| Make: Apple, Model: iPhone 7    | 116783065 |
+| Make: Apple, Model: iPhone 7    | 116927677 |
++---------------------------------+-----------+
+
+
+7. List the ssn and favorite Magic card name of the nerds who are friends with a jock whose favorite sport was not invented in the USA.
+
+SELECT mtg_card.nssn, mtg_card.name
+FROM mtg_card
+WHERE NOT EXISTS (
+	SELECT sport.country
+	FROM sport INNER JOIN jock INNER JOIN friends
+	ON sport.jssn = jock.ssn AND jock.ssn = friends.jssn
+	WHERE sport.country = ‘USA’ AND friends.nssn = mtg_card.nssn);
+
++-----------+--------------------------+
+| nssn      | name                     |
++-----------+--------------------------+
+| 116212998 | Supreme Verdict          |
+| 116328931 | Puppeteer Clique         |
+| 116355793 | Ashiok, Nightmare Weaver |
+| 116357133 | Goblin Guide             |
+| 116431894 | Counterspell             |
+| 116783065 | Lightning Bolt           |
+| 116927677 | Sliver Queen             |
++-----------+--------------------------+
+
+
+
+
+
+8. Select the Magic card name and price of all Magic cards whose price is lower than the price of the most expensive card.
+
+SELECT mtg_card.name, mtg_card.avg_price
+FROM mtg_card
+WHERE mtg_card.avg_price < (
+	SELECT max(mtg_card.avg_price)
+	FROM mtg_card);
+
++--------------------------+-----------+
+| name                     | avg_price |
++--------------------------+-----------+
+| Serra Avatar             |      0.70 |
+| Supreme Verdict          |      6.20 |
+| Dead Drop                |      0.10 |
+| Puppeteer Clique         |      5.59 |
+| Ashiok, Nightmare Weaver |      4.92 |
+| Goblin Guide             |      9.17 |
+| Charging Badger          |      0.11 |
+| Counterspell             |      1.70 |
+| Lightning Bolt           |      2.25 |
++--------------------------+-----------+
+
+
+9. List the Magic card names where at least two cards of that card’s type are a nerd’s favorite
+
+SELECT c.name
+FROM mtg_card c
+WHERE 2 <= (
+	SELECT COUNT(mtg_card.card_type)
+	FROM mtg_card
+WHERE mtg_card.card_type = c.card_type);
+
+
++------------------+
+| name             |
++------------------+
+| Serra Avatar     |
+| Supreme Verdict  |
+| Dead Drop        |
+| Puppeteer Clique |
+| Goblin Guide     |
+| Charging Badger  |
+| Counterspell     |
+| Lightning Bolt   |
+| Sliver Queen     |
++------------------+
